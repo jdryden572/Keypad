@@ -7,7 +7,7 @@ const int ledPins[NUM_KEYS] = {20, 17, 16, 10, 9, 6};
 const int ledIntensities[NUM_KEYS] = {30, 30, 30, 30, 30, 30};
 const int debounceInterval = 10;
 
-Bounce buttons[NUM_KEYS] = {Bounce(), Bounce(), Bounce(), Bounce(), Bounce(), Bounce()};
+Bounce buttons[NUM_KEYS];
 
 struct KeyCombo {
   int modifier;
@@ -22,6 +22,7 @@ void setup() {
   
   for (int i = 0; i < NUM_KEYS; i++) {
     pinMode(buttonPins[i], INPUT_PULLUP);
+    buttons[i] = Bounce();
     buttons[i].attach(buttonPins[i]);
     buttons[i].interval(debounceInterval);
     pinMode(ledPins[i], OUTPUT);
@@ -61,16 +62,43 @@ void handleSerial() {
   if (Serial.available() > 0) {
     char received = Serial.read();
     if (received == 'P') {
-      printCombos();
+      sendKeyCombos();
+    }
+    else if (received == 'S') {
+      setCombos();
     }
   }
 }
 
-void printCombos() {
+void sendKeyCombos() {
   for (int i = 0; i < NUM_KEYS; i++) {
-    Serial.println(keyCombos[i].modifier - 0xE000);
-    Serial.println(keyCombos[i].key - 0xF000);
-    Serial.println();
+    Serial.write(lowByte(keyCombos[i].modifier));
+    Serial.write(highByte(keyCombos[i].modifier));
+    Serial.write(lowByte(keyCombos[i].key));
+    Serial.write(highByte(keyCombos[i].key));
+  }
+}
+
+void setCombos() {
+  readKeyCombosFromSerial();
+  storeKeyCombos();
+  sendKeyCombos();
+}
+
+void readKeyCombosFromSerial() {
+  const byte BUF_SIZE = NUM_KEYS * 4;
+  char buf[BUF_SIZE];
+  int readLen = Serial.readBytes(buf, BUF_SIZE);
+  if (readLen == BUF_SIZE) {
+    for (int i = 0; i < NUM_KEYS; i++) {
+      int startIdx = 4 * i;
+      int modifier = buf[startIdx + 1] << 8 | buf[startIdx];
+      int key = buf[startIdx + 3] << 8 | buf[startIdx + 2];
+      keyCombos[i] = KeyCombo {
+        modifier,
+        key
+      };
+    }
   }
 }
 
