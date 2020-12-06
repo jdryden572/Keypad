@@ -6,36 +6,46 @@ use std::io::{Read, Write};
 use std::convert::{TryInto};
 use num_traits::cast::FromPrimitive;
 use serialport::SerialPort;
-use keys::{Key, ModifierKey};
-
-#[derive(Debug)]
-struct KeyCombo {
-    modifier: Option<ModifierKey>,
-    key: Option<Key>
-}
+use keys::{Key, ModifierKey, KeyCombo};
 
 impl KeyCombo {
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, Box<dyn Error>> {
-        let modifier = u16::from_le_bytes(bytes[0..2].try_into()?);
-        let key = u16::from_le_bytes(bytes[2..4].try_into()?);
-        let combo = KeyCombo { 
-            modifier: ModifierKey::from_u16(modifier), 
-            key: Key::from_u16(key) 
+        let keys: Result<Vec<_>, _> = bytes.chunks(2)
+            .map(|chunk| TryInto::<[u8;2]>::try_into(chunk).map(u16::from_le_bytes))
+            .collect();
+
+        let mut keys = keys?.into_iter();
+        let combo = KeyCombo {
+            modifier_one: ModifierKey::from_u16(keys.next().unwrap()),
+            modifier_two: ModifierKey::from_u16(keys.next().unwrap()),
+            key_one: Key::from_u16(keys.next().unwrap()),
+            key_two: Key::from_u16(keys.next().unwrap()),
         };
+
         Ok(combo)
     }
 
     pub fn to_bytes(&self) -> Vec<u8> {
-        let mod_bytes = match self.modifier {
-            Some(modifier) => (modifier as u16).to_le_bytes(),
-            None => [0u8; 2]
-        };
-        let key_bytes = match self.key {
-            Some(key) => (key as u16).to_le_bytes(),
-            None => [0u8; 2]
-        };
+        [
+            modifier_key_to_bytes(self.modifier_one),
+            modifier_key_to_bytes(self.modifier_two),
+            key_to_bytes(self.key_one),
+            key_to_bytes(self.key_two),
+        ].concat()
+    }
+}
 
-        [mod_bytes, key_bytes].concat()
+fn modifier_key_to_bytes(key: Option<ModifierKey>) -> [u8; 2] {
+    match key {
+        Some(modifier) =>  (modifier as u16).to_le_bytes(),
+        None => [0u8; 2]
+    }
+}
+
+fn key_to_bytes(key: Option<Key>) -> [u8; 2] {
+    match key {
+        Some(key) =>  (key as u16).to_le_bytes(),
+        None => [0u8; 2]
     }
 }
 
@@ -49,12 +59,12 @@ fn main() {
     let mut port = serialport::open_with_settings("COM3", &settings).unwrap();
 
     let combos = vec![
-        KeyCombo { modifier: Some(ModifierKey::LeftShift), key: Some(Key::P) },
-        KeyCombo { modifier: None, key: Some(Key::W) },
-        KeyCombo { modifier: None, key: Some(Key::E) },
-        KeyCombo { modifier: Some(ModifierKey::LeftShift), key: Some(Key::R) },
-        KeyCombo { modifier: None, key: Some(Key::T) },
-        KeyCombo { modifier: None, key: Some(Key::Y) },
+        KeyCombo { modifier_one: None, modifier_two: None, key_one: Some(Key::A), key_two: None },
+        KeyCombo { modifier_one: None, modifier_two: None, key_one: Some(Key::B), key_two: None },
+        KeyCombo { modifier_one: None, modifier_two: None, key_one: Some(Key::C), key_two: None },
+        KeyCombo { modifier_one: None, modifier_two: None, key_one: Some(Key::D), key_two: None },
+        KeyCombo { modifier_one: None, modifier_two: None, key_one: Some(Key::E), key_two: None },
+        KeyCombo { modifier_one: None, modifier_two: None, key_one: Some(Key::F), key_two: None },
     ];
 
     let saved = send_combos_to_device(&combos, &mut *port).unwrap();
