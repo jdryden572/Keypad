@@ -10,14 +10,25 @@ const int debounceInterval = 10;
 Bounce buttons[NUM_KEYS];
 
 struct KeyCombo {
-  int modifier;
-  int key;
+  int modifier_one;
+  int modifier_two;
+  int key_one;
+  int key_two;
 };
 
-KeyCombo keyCombos[NUM_KEYS];
+KeyCombo keyCombos[NUM_KEYS] = {
+  { 0, 0, KEY_A, KEY_M },
+  { 0, 0, KEY_B, KEY_N },
+  { 0, 0, KEY_C, KEY_O },
+  { 0, 0, KEY_D, KEY_P },
+  { 0, 0, KEY_E, KEY_Q },
+  { 0, 0, KEY_F, KEY_R },
+};
 
 void setup() {
-  loadKeyCombos();
+  //storeKeyCombos();
+  
+  //loadKeyCombos();
   Serial.begin(115200);
   
   for (int i = 0; i < NUM_KEYS; i++) {
@@ -31,14 +42,14 @@ void setup() {
 
 void storeKeyCombos() {
   for (int i = 0; i < NUM_KEYS; i++) {
-    int address = i * 10;
+    int address = i * sizeof(KeyCombo);
     EEPROM.put(address, keyCombos[i]);
   }
 }
 
 void loadKeyCombos() {
   for (int i = 0; i < NUM_KEYS; i++) {
-    int address = i * 10;
+    int address = i * sizeof(KeyCombo);
     EEPROM.get(address, keyCombos[i]);
   }
 }
@@ -72,11 +83,17 @@ void handleSerial() {
 
 void sendKeyCombos() {
   for (int i = 0; i < NUM_KEYS; i++) {
-    Serial.write(lowByte(keyCombos[i].modifier));
-    Serial.write(highByte(keyCombos[i].modifier));
-    Serial.write(lowByte(keyCombos[i].key));
-    Serial.write(highByte(keyCombos[i].key));
+    sendKey(keyCombos[i].modifier_one);
+    sendKey(keyCombos[i].modifier_two);
+    sendKey(keyCombos[i].key_one);
+    sendKey(keyCombos[i].key_two);
   }
+}
+
+void sendKey(int key) {
+  Serial.println(key);
+  //Serial.write(lowByte(key));
+  //Serial.write(highByte(key));
 }
 
 void setCombos() {
@@ -86,30 +103,43 @@ void setCombos() {
 }
 
 void readKeyCombosFromSerial() {
-  const byte BUF_SIZE = NUM_KEYS * 4;
+  const byte KEY_BYTES = 8;
+  const byte BUF_SIZE = NUM_KEYS * KEY_BYTES;
   char buf[BUF_SIZE];
   int readLen = Serial.readBytes(buf, BUF_SIZE);
   if (readLen == BUF_SIZE) {
     for (int i = 0; i < NUM_KEYS; i++) {
-      int startIdx = 4 * i;
-      int modifier = buf[startIdx + 1] << 8 | buf[startIdx];
-      int key = buf[startIdx + 3] << 8 | buf[startIdx + 2];
+      int startIdx = KEY_BYTES * i;
+      int modifier_one = buf[startIdx + 1] << 8 | buf[startIdx];
+      int modifier_two = buf[startIdx + 3] << 8 | buf[startIdx + 2];
+      int key_one = buf[startIdx + 5] << 8 | buf[startIdx + 4];
+      int key_two = buf[startIdx + 7] << 8 | buf[startIdx + 6];
       keyCombos[i] = KeyCombo {
-        modifier,
-        key
+        modifier_one,
+        modifier_two,
+        key_one,
+        key_two
       };
     }
   }
 }
 
 void sendKeyCombo(KeyCombo combo) {
-  if (combo.modifier != 0) {
-    Keyboard.set_modifier(combo.modifier);
+  int modifier = combo.modifier_one | combo.modifier_two;
+  if (modifier != 0) {
+    Keyboard.set_modifier(modifier);
     Keyboard.send_now();
   }
   
-  if (combo.key != 0) {
-    Keyboard.set_key1(combo.key);
+  if (combo.key_one != 0) {
+    Keyboard.set_key1(combo.key_one);
+    Keyboard.send_now();
+  }
+
+  if (combo.key_two != 0) {
+    Keyboard.set_key1(0);
+    Keyboard.send_now();
+    Keyboard.set_key1(combo.key_two);
     Keyboard.send_now();
   }
 
