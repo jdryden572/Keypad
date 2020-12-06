@@ -7,6 +7,11 @@ const int ledPins[NUM_KEYS] = {20, 17, 16, 10, 9, 6};
 const int ledIntensities[NUM_KEYS] = {30, 30, 30, 30, 30, 30};
 const int debounceInterval = 10;
 
+const char READ_KEYS = 'R';
+const char WRITE_KEYS = 'W';
+const char HELLO = 'H';
+const char HELLO_ACK = 'A';
+
 Bounce buttons[NUM_KEYS];
 
 struct KeyCombo {
@@ -16,19 +21,10 @@ struct KeyCombo {
   int key_two;
 };
 
-KeyCombo keyCombos[NUM_KEYS] = {
-  { 0, 0, KEY_A, KEY_M },
-  { 0, 0, KEY_B, KEY_N },
-  { 0, 0, KEY_C, KEY_O },
-  { 0, 0, KEY_D, KEY_P },
-  { 0, 0, KEY_E, KEY_Q },
-  { 0, 0, KEY_F, KEY_R },
-};
+KeyCombo keyCombos[NUM_KEYS];
 
 void setup() {
-  //storeKeyCombos();
-  
-  //loadKeyCombos();
+  loadKeyCombos();
   Serial.begin(115200);
   
   for (int i = 0; i < NUM_KEYS; i++) {
@@ -72,11 +68,16 @@ void loop() {
 void handleSerial() {
   if (Serial.available() > 0) {
     char received = Serial.read();
-    if (received == 'P') {
-      sendKeyCombos();
-    }
-    else if (received == 'S') {
-      setCombos();
+    switch (received) {
+      case HELLO:
+        Serial.write(HELLO_ACK);
+        break;
+      case READ_KEYS:
+        sendKeyCombos();
+        break;
+      case WRITE_KEYS:
+        setCombos();
+        break;
     }
   }
 }
@@ -91,9 +92,8 @@ void sendKeyCombos() {
 }
 
 void sendKey(int key) {
-  Serial.println(key);
-  //Serial.write(lowByte(key));
-  //Serial.write(highByte(key));
+  Serial.write(lowByte(key));
+  Serial.write(highByte(key));
 }
 
 void setCombos() {
