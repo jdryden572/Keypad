@@ -15,7 +15,7 @@ impl Display for KeyCombo {
         let mut display = match (self.modifier_one, self.key_one) {
             (Some(mod1), Some(key1)) => format!("{} + {}", mod1, key1),
             (None, Some(key1)) => format!("{}", key1),
-            _ => String::new()
+            _ => String::new(),
         };
 
         if self.key_two.is_some() && display.len() > 0 {
@@ -27,12 +27,8 @@ impl Display for KeyCombo {
             (None, Some(key2)) => display.push_str(&format!("{}", key2)),
             _ => {}
         }
-        
-        write!(
-            f,
-            "{}",
-            display
-        )
+
+        write!(f, "{}", display)
     }
 }
 
@@ -63,7 +59,7 @@ impl Display for ModifierKey {
                 ModifierKey::RightCtrl => "Right Ctrl",
                 ModifierKey::RightShift => "Right Shift",
                 ModifierKey::RightAlt => "Right Alt",
-                ModifierKey::RightGui => "Right Windows"
+                ModifierKey::RightGui => "Right Windows",
             }
         )
     }
@@ -78,7 +74,7 @@ impl ModifierKey {
         ModifierKey::RightCtrl,
         ModifierKey::RightShift,
         ModifierKey::RightAlt,
-        ModifierKey::RightGui
+        ModifierKey::RightGui,
     ];
 }
 

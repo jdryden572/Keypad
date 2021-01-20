@@ -11,7 +11,12 @@ fn main() -> Result<(), KeypadError> {
 
     let mut keypad = Keypad::auto_detect()?;
 
-    keypad.flash_key(FlashCommand { one: true, three: true, five: true, ..Default::default()})?;
+    keypad.flash_key(FlashCommand {
+        one: true,
+        three: true,
+        five: true,
+        ..Default::default()
+    })?;
     std::thread::sleep(Duration::from_millis(2000));
 
     let saved = keypad.get_combos_from_device()?;
@@ -20,12 +25,42 @@ fn main() -> Result<(), KeypadError> {
     }
 
     let combos = [
-        KeyCombo { modifier_one: Some(ModifierKey::LeftGui), modifier_two: None, key_one: Some(Key::L), key_two: None },
-        KeyCombo { modifier_one: None, modifier_two: None, key_one: Some(Key::B), key_two: None },
-        KeyCombo { modifier_one: Some(ModifierKey::LeftCtrl), modifier_two: None, key_one: Some(Key::R), key_two: Some(Key::D) },
-        KeyCombo { modifier_one: Some(ModifierKey::LeftCtrl), modifier_two: None, key_one: Some(Key::R), key_two: Some(Key::L) },
-        KeyCombo { modifier_one: Some(ModifierKey::LeftCtrl), modifier_two: None, key_one: Some(Key::B), key_two: None },
-        KeyCombo { modifier_one: Some(ModifierKey::LeftCtrl), modifier_two: None, key_one: Some(Key::Period), key_two: None },
+        KeyCombo {
+            modifier_one: Some(ModifierKey::LeftGui),
+            modifier_two: None,
+            key_one: Some(Key::L),
+            key_two: None,
+        },
+        KeyCombo {
+            modifier_one: None,
+            modifier_two: None,
+            key_one: Some(Key::B),
+            key_two: None,
+        },
+        KeyCombo {
+            modifier_one: Some(ModifierKey::LeftCtrl),
+            modifier_two: None,
+            key_one: Some(Key::R),
+            key_two: Some(Key::D),
+        },
+        KeyCombo {
+            modifier_one: Some(ModifierKey::LeftCtrl),
+            modifier_two: None,
+            key_one: Some(Key::R),
+            key_two: Some(Key::L),
+        },
+        KeyCombo {
+            modifier_one: Some(ModifierKey::LeftCtrl),
+            modifier_two: None,
+            key_one: Some(Key::B),
+            key_two: None,
+        },
+        KeyCombo {
+            modifier_one: Some(ModifierKey::LeftCtrl),
+            modifier_two: None,
+            key_one: Some(Key::Period),
+            key_two: None,
+        },
     ];
 
     // // let combos = vec![

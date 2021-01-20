@@ -1,8 +1,8 @@
-use std::convert::{TryInto};
+use super::keys::{Key, KeyCombo, ModifierKey};
 use num_traits::cast::FromPrimitive;
 use serialport::SerialPort;
+use std::convert::TryInto;
 use thiserror::Error;
-use super::keys::{Key, ModifierKey, KeyCombo};
 
 const HELLO: u8 = 'H' as u8;
 const ACK: u8 = 'A' as u8;
@@ -37,7 +37,7 @@ pub struct FlashCommand {
 }
 
 pub struct Keypad {
-    serial_port: Box<dyn SerialPort>
+    serial_port: Box<dyn SerialPort>,
 }
 
 impl Keypad {
@@ -65,13 +65,16 @@ impl Keypad {
         Err(KeypadError::NoDeviceFound)
     }
 
-    pub fn send_combos_to_device(&mut self, combos: [KeyCombo; 6]) -> Result<[KeyCombo; 6], KeypadError> {
+    pub fn send_combos_to_device(
+        &mut self,
+        combos: [KeyCombo; 6],
+    ) -> Result<[KeyCombo; 6], KeypadError> {
         log::info!("Loading combos into buffer...");
         let mut buf = [0u8; 49];
         buf[0] = WRITE_KEYS;
-    
+
         let mut idx = 1;
-        
+
         for combo in combos.iter() {
             let bytes: Vec<u8> = combo.to_bytes();
             for b in bytes {
@@ -81,29 +84,41 @@ impl Keypad {
         }
 
         log::info!("Sending WRITE_KEYS command...");
-    
+
         self.serial_port.write(&buf)?;
         self.serial_port.flush()?;
-    
+
         read_combos_from_port(&mut *self.serial_port)
     }
-    
+
     pub fn get_combos_from_device(&mut self) -> Result<[KeyCombo; 6], KeypadError> {
         log::info!("Sending READ_KEYS command...");
         self.serial_port.write(&[READ_KEYS])?;
         self.serial_port.flush()?;
-    
+
         read_combos_from_port(&mut *self.serial_port)
     }
 
     pub fn flash_key(&mut self, flash: FlashCommand) -> Result<(), KeypadError> {
         let mut mask = 0u8;
-        if flash.one { mask = mask | 1 << 0 }
-        if flash.two { mask = mask | 1 << 1 }
-        if flash.three { mask = mask | 1 << 2 }
-        if flash.four { mask = mask | 1 << 3 }
-        if flash.five { mask = mask | 1 << 4 }
-        if flash.six { mask = mask | 1 << 5 }
+        if flash.one {
+            mask = mask | 1 << 0
+        }
+        if flash.two {
+            mask = mask | 1 << 1
+        }
+        if flash.three {
+            mask = mask | 1 << 2
+        }
+        if flash.four {
+            mask = mask | 1 << 3
+        }
+        if flash.five {
+            mask = mask | 1 << 4
+        }
+        if flash.six {
+            mask = mask | 1 << 5
+        }
 
         log::info!("Sending flash command {:b}", mask);
         self.serial_port.write(&[FLASH, mask])?;
@@ -123,7 +138,7 @@ fn handshake(port: &mut dyn SerialPort) -> Result<(), KeypadError> {
         Ok(()) => {
             log::info!("Handshake returned! Keypad at {}", name);
             Ok(())
-        },
+        }
         Err(e) => {
             log::info!("No handshake.");
             Err(e)
@@ -143,8 +158,13 @@ fn wait_for_acknowledge(port: &mut dyn SerialPort) -> Result<(), KeypadError> {
 
 impl KeyCombo {
     fn from_bytes(bytes: &[u8]) -> Result<Self, KeypadError> {
-        let keys: Result<Vec<_>, _> = bytes.chunks(2)
-            .map(|chunk| TryInto::<[u8;2]>::try_into(chunk).map(u16::from_le_bytes).map_err(|_| KeypadError::InvalidDataError))
+        let keys: Result<Vec<_>, _> = bytes
+            .chunks(2)
+            .map(|chunk| {
+                TryInto::<[u8; 2]>::try_into(chunk)
+                    .map(u16::from_le_bytes)
+                    .map_err(|_| KeypadError::InvalidDataError)
+            })
             .collect();
 
         let mut keys = keys?.into_iter();
@@ -164,21 +184,22 @@ impl KeyCombo {
             modifier_key_to_bytes(self.modifier_two),
             key_to_bytes(self.key_one),
             key_to_bytes(self.key_two),
-        ].concat()
+        ]
+        .concat()
     }
 }
 
 fn modifier_key_to_bytes(key: Option<ModifierKey>) -> [u8; 2] {
     match key {
-        Some(modifier) =>  (modifier as u16).to_le_bytes(),
-        None => [0u8; 2]
+        Some(modifier) => (modifier as u16).to_le_bytes(),
+        None => [0u8; 2],
     }
 }
 
 fn key_to_bytes(key: Option<Key>) -> [u8; 2] {
     match key {
-        Some(key) =>  (key as u16).to_le_bytes(),
-        None => [0u8; 2]
+        Some(key) => (key as u16).to_le_bytes(),
+        None => [0u8; 2],
     }
 }
 
@@ -188,15 +209,18 @@ fn read_combos_from_port(port: &mut dyn SerialPort) -> Result<[KeyCombo; 6], Key
     port.read_exact(&mut resp)?;
 
     log::info!("Parsing response into KeyCombos...");
-    let combos: Result<Vec<KeyCombo>, _> = resp.chunks(8)
+    let combos: Result<Vec<KeyCombo>, _> = resp
+        .chunks(8)
         .map(|chunk| KeyCombo::from_bytes(chunk))
         .collect();
 
     match combos {
         Ok(combos) => {
             log::info!("Parsed {} combos", combos.len());
-            combos.try_into().map_err(|_| KeypadError::WrongKeyCountFromDevice)
-        },
+            combos
+                .try_into()
+                .map_err(|_| KeypadError::WrongKeyCountFromDevice)
+        }
         Err(e) => {
             log::error!("Error parsing combos: {}", e);
             Err(e)
