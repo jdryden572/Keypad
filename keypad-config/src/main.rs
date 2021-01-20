@@ -11,12 +11,7 @@ fn main() -> Result<(), KeypadError> {
 
     let mut keypad = Keypad::auto_detect()?;
 
-    keypad.flash_key(FlashCommand {
-        one: true,
-        three: true,
-        five: true,
-        ..Default::default()
-    })?;
+    keypad.flash_keys([true, false, true, false, true, false])?;
     std::thread::sleep(Duration::from_millis(2000));
 
     let saved = keypad.get_combos_from_device()?;

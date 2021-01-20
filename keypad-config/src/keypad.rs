@@ -26,16 +26,6 @@ pub enum KeypadError {
     WrongKeyCountFromDevice,
 }
 
-#[derive(Default)]
-pub struct FlashCommand {
-    pub one: bool,
-    pub two: bool,
-    pub three: bool,
-    pub four: bool,
-    pub five: bool,
-    pub six: bool,
-}
-
 pub struct Keypad {
     serial_port: Box<dyn SerialPort>,
 }
@@ -99,25 +89,12 @@ impl Keypad {
         read_combos_from_port(&mut *self.serial_port)
     }
 
-    pub fn flash_key(&mut self, flash: FlashCommand) -> Result<(), KeypadError> {
+    pub fn flash_keys(&mut self, flash: [bool; 6]) -> Result<(), KeypadError> {
         let mut mask = 0u8;
-        if flash.one {
-            mask = mask | 1 << 0
-        }
-        if flash.two {
-            mask = mask | 1 << 1
-        }
-        if flash.three {
-            mask = mask | 1 << 2
-        }
-        if flash.four {
-            mask = mask | 1 << 3
-        }
-        if flash.five {
-            mask = mask | 1 << 4
-        }
-        if flash.six {
-            mask = mask | 1 << 5
+        for (idx, &on) in flash.iter().enumerate() {
+            if on {
+                mask = mask | 1 << idx;
+            }
         }
 
         log::info!("Sending flash command {:b}", mask);
