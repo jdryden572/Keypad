@@ -10,6 +10,32 @@ pub struct KeyCombo {
     pub key_two: Option<Key>,
 }
 
+impl Display for KeyCombo {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut display = match (self.modifier_one, self.key_one) {
+            (Some(mod1), Some(key1)) => format!("{} + {}", mod1, key1),
+            (None, Some(key1)) => format!("{}", key1),
+            _ => String::new()
+        };
+
+        if self.key_two.is_some() && display.len() > 0 {
+            display.push_str(", ");
+        }
+
+        match (self.modifier_two, self.key_two) {
+            (Some(mod2), Some(key2)) => display.push_str(&format!("{} + {}", mod2, key2)),
+            (None, Some(key2)) => display.push_str(&format!("{}", key2)),
+            _ => {}
+        }
+        
+        write!(
+            f,
+            "{}",
+            display
+        )
+    }
+}
+
 enum_from_primitive! {
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum ModifierKey {

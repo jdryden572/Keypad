@@ -4,13 +4,14 @@
 const int NUM_KEYS = 6;
 const int buttonPins[NUM_KEYS] = {23, 22, 0, 1, 2, 3};
 const int ledPins[NUM_KEYS] = {20, 17, 16, 10, 9, 6};
-const int ledIntensities[NUM_KEYS] = {30, 30, 30, 30, 30, 30};
+const int ledIntensity = 30;
 const int debounceInterval = 10;
 
 const char READ_KEYS = 'R';
 const char WRITE_KEYS = 'W';
+const char FLASH = 'F';
 const char HELLO = 'H';
-const char HELLO_ACK = 'A';
+const char ACK = 'A';
 
 Bounce buttons[NUM_KEYS];
 
@@ -23,6 +24,11 @@ struct KeyCombo {
 
 KeyCombo keyCombos[NUM_KEYS];
 
+unsigned long flashLEDsStart = 0;
+byte flashingMask = 255;
+bool flashingLEDs = false;
+bool lightsOn = false;
+
 void setup() {
   loadKeyCombos();
   Serial.begin(115200);
@@ -34,6 +40,8 @@ void setup() {
     buttons[i].interval(debounceInterval);
     pinMode(ledPins[i], OUTPUT);
   }
+
+  startFlashingLEDs();
 }
 
 void storeKeyCombos() {
@@ -54,7 +62,7 @@ void loop() {
   for (int i = 0; i < NUM_KEYS; i++) {
     buttons[i].update();
     if (buttons[i].fell()) {
-      analogWrite(ledPins[i], ledIntensities[i]);
+      analogWrite(ledPins[i], ledIntensity);
       sendKeyCombo(keyCombos[i]);
     }
     else if (buttons[i].rose()) {
@@ -62,6 +70,7 @@ void loop() {
     }
   }
 
+  updateFlashingLEDs();
   handleSerial();
 }
 
@@ -70,13 +79,16 @@ void handleSerial() {
     char received = Serial.read();
     switch (received) {
       case HELLO:
-        Serial.write(HELLO_ACK);
+        Serial.write(ACK);
         break;
       case READ_KEYS:
         sendKeyCombos();
         break;
       case WRITE_KEYS:
         setCombos();
+        break;
+      case FLASH:
+        flashKeys();
         break;
     }
   }
@@ -121,11 +133,66 @@ void readKeyCombosFromSerial() {
         key_two
       };
     }
+
+    startFlashingLEDs();
+  }
+}
+
+void flashKeys() {
+  startFlashingLEDs();
+  flashingMask = Serial.read();
+  Serial.write(ACK);
+}
+
+void startFlashingLEDs() {
+  allLights(false); // reset in case we're in the middle of a previous flash cycle
+  flashingLEDs = true;
+  flashLEDsStart = millis();
+}
+
+void updateFlashingLEDs() {
+  if (!flashingLEDs) {
+    return;
+  }
+
+  unsigned long elapsed = millis() - flashLEDsStart;
+  
+  if (elapsed > 1350) {
+    flashingLEDs = false;
+    flashingMask = 255;
+    allLights(false);
+  }
+  else if (elapsed > 1000) {
+    allLights(true);
+  }
+  else if (elapsed > 850) {
+    allLights(false);
+  }
+  else if (elapsed > 500) {
+    allLights(true);
+  }
+  else if (elapsed > 350) {
+    allLights(false);
+  }
+  else {
+    allLights(true);
+  }
+}
+
+void allLights(bool on) {
+  if (lightsOn != on) {
+    lightsOn = on;
+    int intensity = on ? ledIntensity : 0;
+    for (int i = 0; i < NUM_KEYS; i++) {
+      if ((flashingMask & (1 << i)) > 0) {
+        analogWrite(ledPins[i], intensity);
+      }
+    }
   }
 }
 
 void sendKeyCombo(KeyCombo combo) {
-  int modifier = combo.modifier_one | combo.modifier_two;
+  int modifier = combo.modifier_one;
   if (modifier != 0) {
     Keyboard.set_modifier(modifier);
     Keyboard.send_now();
@@ -137,8 +204,10 @@ void sendKeyCombo(KeyCombo combo) {
   }
 
   if (combo.key_two != 0) {
+    Keyboard.set_modifier(0);
     Keyboard.set_key1(0);
     Keyboard.send_now();
+    Keyboard.set_modifier(combo.modifier_two);
     Keyboard.set_key1(combo.key_two);
     Keyboard.send_now();
   }
