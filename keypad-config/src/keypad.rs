@@ -2,7 +2,7 @@ use std::convert::{TryInto};
 use num_traits::cast::FromPrimitive;
 use serialport::SerialPort;
 use thiserror::Error;
-use crate::keys::{Key, ModifierKey, KeyCombo};
+use super::keys::{Key, ModifierKey, KeyCombo};
 
 const HELLO: u8 = 'H' as u8;
 const ACK: u8 = 'A' as u8;

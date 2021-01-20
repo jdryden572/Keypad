@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::fmt::{Display, Formatter};
 
 use enum_primitive::*;
 
@@ -11,7 +11,7 @@ pub struct KeyCombo {
 }
 
 impl Display for KeyCombo {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let mut display = match (self.modifier_one, self.key_one) {
             (Some(mod1), Some(key1)) => format!("{} + {}", mod1, key1),
             (None, Some(key1)) => format!("{}", key1),
@@ -51,7 +51,7 @@ pub enum ModifierKey {
 }
 
 impl Display for ModifierKey {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
             "{}",
@@ -199,7 +199,7 @@ pub enum Key {
 }
 
 impl Display for Key {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
             "{}",
