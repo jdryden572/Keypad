@@ -1,5 +1,4 @@
 use std::env;
-use std::time::Duration;
 
 use keypad::*;
 
@@ -11,8 +10,8 @@ fn main() -> Result<(), KeypadError> {
 
     let mut keypad = Keypad::auto_detect()?;
 
-    keypad.flash_keys([true, false, true, false, true, false])?;
-    std::thread::sleep(Duration::from_millis(2000));
+    // keypad.flash_keys([true, false, true, false, true, false])?;
+    // std::thread::sleep(Duration::from_millis(2000));
 
     let saved = keypad.get_combos_from_device()?;
     for combo in saved.iter() {
@@ -21,60 +20,57 @@ fn main() -> Result<(), KeypadError> {
 
     let combos = [
         KeyCombo {
-            modifier_one: Some(ModifierKey::LeftGui),
-            modifier_two: None,
-            key_one: Some(Key::L),
-            key_two: None,
+            one: KeyPress::windows().key(Key::L),
+            two: None
         },
         KeyCombo {
-            modifier_one: None,
-            modifier_two: None,
-            key_one: Some(Key::B),
-            key_two: None,
+            one: KeyPress::shift().key(Key::M),
+            two: Some(KeyPress::key(Key::R))
         },
         KeyCombo {
-            modifier_one: Some(ModifierKey::LeftCtrl),
-            modifier_two: None,
-            key_one: Some(Key::R),
-            key_two: Some(Key::D),
+            one: KeyPress::ctrl().key(Key::R),
+            two: Some(KeyPress::key(Key::D))
         },
         KeyCombo {
-            modifier_one: Some(ModifierKey::LeftCtrl),
-            modifier_two: None,
-            key_one: Some(Key::R),
-            key_two: Some(Key::L),
+            one: KeyPress::ctrl().key(Key::R),
+            two: Some(KeyPress::key(Key::L))
         },
         KeyCombo {
-            modifier_one: Some(ModifierKey::LeftCtrl),
-            modifier_two: None,
-            key_one: Some(Key::B),
-            key_two: None,
+            one: KeyPress::ctrl().key(Key::B),
+            two: None
         },
         KeyCombo {
-            modifier_one: Some(ModifierKey::LeftCtrl),
-            modifier_two: None,
-            key_one: Some(Key::Period),
-            key_two: None,
+            one: KeyPress::ctrl().key(Key::Period),
+            two: None
         },
     ];
 
-    // // let combos = vec![
-    // //     KeyCombo { modifier_one: None, modifier_two: None, key_one: Some(Key::F), key_two: None },
-    // //     KeyCombo { modifier_one: None, modifier_two: None, key_one: Some(Key::E), key_two: None },
-    // //     KeyCombo { modifier_one: None, modifier_two: None, key_one: Some(Key::D), key_two: None },
-    // //     KeyCombo { modifier_one: None, modifier_two: None, key_one: Some(Key::C), key_two: None },
-    // //     KeyCombo { modifier_one: None, modifier_two: None, key_one: Some(Key::B), key_two: None },
-    // //     KeyCombo { modifier_one: None, modifier_two: None, key_one: Some(Key::A), key_two: None },
-    // // ];
-
-    // // let combos = vec![
-    // //     KeyCombo { modifier_one: None, modifier_two: None, key_one: Some(Key::KeyPad1), key_two: None },
-    // //     KeyCombo { modifier_one: None, modifier_two: None, key_one: Some(Key::KeyPad2), key_two: None },
-    // //     KeyCombo { modifier_one: None, modifier_two: None, key_one: Some(Key::KeyPad3), key_two: None },
-    // //     KeyCombo { modifier_one: None, modifier_two: None, key_one: Some(Key::KeyPad4), key_two: None },
-    // //     KeyCombo { modifier_one: None, modifier_two: None, key_one: Some(Key::KeyPad5), key_two: None },
-    // //     KeyCombo { modifier_one: None, modifier_two: None, key_one: Some(Key::KeyPad6), key_two: None },
-    // // ];
+    // let combos = [
+    //     KeyCombo {
+    //         one: KeyPress::key(Key::KeyPad1),
+    //         two: None
+    //     },
+    //     KeyCombo {
+    //         one: KeyPress::key(Key::KeyPad2),
+    //         two: None
+    //     },
+    //     KeyCombo {
+    //         one: KeyPress::key(Key::KeyPad3),
+    //         two: None
+    //     },
+    //     KeyCombo {
+    //         one: KeyPress::key(Key::KeyPad4),
+    //         two: None
+    //     },
+    //     KeyCombo {
+    //         one: KeyPress::key(Key::KeyPad5),
+    //         two: None
+    //     },
+    //     KeyCombo {
+    //         one: KeyPress::key(Key::KeyPad6),
+    //         two: None
+    //     },
+    // ];
 
     let saved = keypad.send_combos_to_device(combos)?;
     for combo in saved.iter() {

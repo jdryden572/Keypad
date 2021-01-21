@@ -2,33 +2,130 @@ use std::fmt::{Display, Formatter};
 
 use enum_primitive::*;
 
-#[derive(Default, Clone, Debug)]
+#[derive(Clone, Debug)]
 pub struct KeyCombo {
-    pub modifier_one: Option<ModifierKey>,
-    pub modifier_two: Option<ModifierKey>,
-    pub key_one: Option<Key>,
-    pub key_two: Option<Key>,
+    pub one: KeyPress,
+    pub two: Option<KeyPress>,
+    // pub modifier_one: Option<ModifierKey>,
+    // pub modifier_two: Option<ModifierKey>,
+    // pub key_one: Option<Key>,
+    // pub key_two: Option<Key>,
 }
 
 impl Display for KeyCombo {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        let mut display = match (self.modifier_one, self.key_one) {
-            (Some(mod1), Some(key1)) => format!("{} + {}", mod1, key1),
-            (None, Some(key1)) => format!("{}", key1),
-            _ => String::new(),
-        };
-
-        if self.key_two.is_some() && display.len() > 0 {
-            display.push_str(", ");
+        write!(f, "{}", self.one)?;
+        if let Some(two) = &self.two {
+            write!(f, ", {}", two)?;
         }
+        Ok(())
+    }
+}
 
-        match (self.modifier_two, self.key_two) {
-            (Some(mod2), Some(key2)) => display.push_str(&format!("{} + {}", mod2, key2)),
-            (None, Some(key2)) => display.push_str(&format!("{}", key2)),
-            _ => {}
+#[derive(Clone, Debug)]
+pub struct KeyPress {
+    pub ctrl: bool,
+    pub alt: bool,
+    pub shift: bool,
+    pub windows: bool,
+    pub key: Key,
+}
+
+impl KeyPress {
+    pub fn key(key: Key) -> Self {
+        Self {
+            ctrl: false,
+            alt: false,
+            shift: false,
+            windows: false,
+            key
         }
+    }
 
-        write!(f, "{}", display)
+    pub fn ctrl() -> KeyPressBuilder {
+        KeyPressBuilder {
+            ctrl: true,
+            ..Default::default()
+        }
+    }
+
+    pub fn alt() -> KeyPressBuilder {
+        KeyPressBuilder {
+            alt: true,
+            ..Default::default()
+        }
+    }
+
+    pub fn shift() -> KeyPressBuilder {
+        KeyPressBuilder {
+            shift: true,
+            ..Default::default()
+        }
+    }
+
+    pub fn windows() -> KeyPressBuilder {
+        KeyPressBuilder {
+            windows: true,
+            ..Default::default()
+        }
+    }
+}
+
+#[derive(Default)]
+pub struct KeyPressBuilder {
+    ctrl: bool,
+    alt: bool,
+    shift: bool,
+    windows: bool,
+}
+
+impl KeyPressBuilder {
+    pub fn ctrl(mut self) -> KeyPressBuilder {
+        self.ctrl = true;
+        self
+    }
+
+    pub fn alt(mut self) -> KeyPressBuilder {
+        self.alt = true;
+        self
+    }
+
+    pub fn shift(mut self) -> KeyPressBuilder {
+        self.shift = true;
+        self
+    }
+
+    pub fn windows(mut self) -> KeyPressBuilder {
+        self.windows = true;
+        self
+    }
+
+    pub fn key(self, key: Key) -> KeyPress {
+        KeyPress {
+            ctrl: self.ctrl,
+            alt: self.alt,
+            shift: self.shift,
+            windows: self.windows,
+            key
+        }
+    }
+}
+
+impl Display for KeyPress {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        if self.ctrl {
+            write!(f, "Ctrl + ")?;
+        }
+        if self.alt {
+            write!(f, "Alt + ")?;
+        }
+        if self.shift {
+            write!(f, "Shift + ")?;
+        }
+        if self.windows {
+            write!(f, "Win + ")?;
+        }
+        write!(f, "{}", self.key)
     }
 }
 

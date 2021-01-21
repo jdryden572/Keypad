@@ -17,8 +17,8 @@ Bounce buttons[NUM_KEYS];
 
 struct KeyCombo {
   int modifier_one;
-  int modifier_two;
   int key_one;
+  int modifier_two;
   int key_two;
 };
 
@@ -29,7 +29,7 @@ byte flashingMask = 255;
 bool flashingLEDs = false;
 bool lightsOn = false;
 
-void setup() {
+void setup() {  
   loadKeyCombos();
   Serial.begin(115200);
   
@@ -97,8 +97,8 @@ void handleSerial() {
 void sendKeyCombos() {
   for (int i = 0; i < NUM_KEYS; i++) {
     sendKey(keyCombos[i].modifier_one);
-    sendKey(keyCombos[i].modifier_two);
     sendKey(keyCombos[i].key_one);
+    sendKey(keyCombos[i].modifier_two);
     sendKey(keyCombos[i].key_two);
   }
 }
@@ -123,13 +123,13 @@ void readKeyCombosFromSerial() {
     for (int i = 0; i < NUM_KEYS; i++) {
       int startIdx = KEY_BYTES * i;
       int modifier_one = buf[startIdx + 1] << 8 | buf[startIdx];
-      int modifier_two = buf[startIdx + 3] << 8 | buf[startIdx + 2];
-      int key_one = buf[startIdx + 5] << 8 | buf[startIdx + 4];
+      int key_one = buf[startIdx + 3] << 8 | buf[startIdx + 2];
+      int modifier_two = buf[startIdx + 5] << 8 | buf[startIdx + 4];
       int key_two = buf[startIdx + 7] << 8 | buf[startIdx + 6];
       keyCombos[i] = KeyCombo {
         modifier_one,
-        modifier_two,
         key_one,
+        modifier_two,
         key_two
       };
     }
@@ -192,27 +192,21 @@ void allLights(bool on) {
 }
 
 void sendKeyCombo(KeyCombo combo) {
-  int modifier = combo.modifier_one;
-  if (modifier != 0) {
-    Keyboard.set_modifier(modifier);
-    Keyboard.send_now();
-  }
-  
   if (combo.key_one != 0) {
+    Keyboard.set_modifier(combo.modifier_one);
     Keyboard.set_key1(combo.key_one);
+    Keyboard.send_now();
+    Keyboard.set_modifier(0);
+    Keyboard.set_key1(0);
     Keyboard.send_now();
   }
 
   if (combo.key_two != 0) {
-    Keyboard.set_modifier(0);
-    Keyboard.set_key1(0);
-    Keyboard.send_now();
     Keyboard.set_modifier(combo.modifier_two);
     Keyboard.set_key1(combo.key_two);
     Keyboard.send_now();
+    Keyboard.set_modifier(0);
+    Keyboard.set_key1(0);
+    Keyboard.send_now();
   }
-
-  Keyboard.set_modifier(0);
-  Keyboard.set_key1(0);
-  Keyboard.send_now();
 }

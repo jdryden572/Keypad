@@ -1,3 +1,5 @@
+use crate::KeyPress;
+
 use super::keys::{Key, KeyCombo, ModifierKey};
 use num_traits::cast::FromPrimitive;
 use serialport::SerialPort;
@@ -133,6 +135,55 @@ fn wait_for_acknowledge(port: &mut dyn SerialPort) -> Result<(), KeypadError> {
     }
 }
 
+impl KeyPress {
+    fn from_u16(modifier: u16, key: u16) -> Result<Self, KeypadError> {
+        log::trace!("Modifier: {}, Key: {}", modifier, key);
+        let press = KeyPress {
+            ctrl: modifier & ModifierKey::LeftCtrl as u16 == ModifierKey::LeftCtrl as u16,
+            alt: modifier & ModifierKey::LeftAlt as u16 == ModifierKey::LeftAlt as u16,
+            shift: modifier & ModifierKey::LeftShift as u16 == ModifierKey::LeftShift as u16,
+            windows: modifier & ModifierKey::LeftGui as u16 == ModifierKey::LeftGui as u16,
+            key: Key::from_u16(key).ok_or_else(|| KeypadError::InvalidDataError)?
+        };
+        log::trace!("KeyPress: {}", press);
+        Ok(press)
+    }
+
+    fn to_bytes(&self) -> [u8; 4] {
+        log::trace!("Write KeyPress: {}", self);
+        let mut modifier = 0u16;
+        if self.ctrl {
+            modifier = modifier | ModifierKey::LeftCtrl as u16;
+        }
+        if self.alt {
+            modifier = modifier | ModifierKey::LeftAlt as u16;
+        }
+        if self.shift {
+            modifier = modifier | ModifierKey::LeftShift as u16;
+        }
+        if self.windows {
+            modifier = modifier | ModifierKey::LeftGui as u16;
+        }
+        log::trace!("Modifier: {}, Key: {}", modifier, self.key as u16);
+        let modifier = modifier.to_le_bytes();
+        let key = (self.key as u16).to_le_bytes();
+
+        [
+            modifier[0],
+            modifier[1],
+            key[0],
+            key[1],
+        ]
+    }
+}
+
+fn optional_key_bytes(option: &Option<KeyPress>) -> [u8; 4] {
+    match option {
+        Some(press) => press.to_bytes(),
+        None => [0u8; 4]
+    }
+}
+
 impl KeyCombo {
     fn from_bytes(bytes: &[u8]) -> Result<Self, KeypadError> {
         let keys: Result<Vec<_>, _> = bytes
@@ -145,38 +196,28 @@ impl KeyCombo {
             .collect();
 
         let mut keys = keys?.into_iter();
-        let combo = KeyCombo {
-            modifier_one: ModifierKey::from_u16(keys.next().unwrap()),
-            modifier_two: ModifierKey::from_u16(keys.next().unwrap()),
-            key_one: Key::from_u16(keys.next().unwrap()),
-            key_two: Key::from_u16(keys.next().unwrap()),
+        let modifier = keys.next().unwrap();
+        let key = keys.next().unwrap();
+        let one = KeyPress::from_u16(modifier, key)?;
+
+        let modifier = keys.next().unwrap();
+        let key = keys.next().unwrap();
+        let two = if key > 0 {
+            Some(KeyPress::from_u16(modifier, key)?)
+        } else {
+            None
         };
 
+        let combo = KeyCombo { one, two };
         Ok(combo)
     }
 
     fn to_bytes(&self) -> Vec<u8> {
         [
-            modifier_key_to_bytes(self.modifier_one),
-            modifier_key_to_bytes(self.modifier_two),
-            key_to_bytes(self.key_one),
-            key_to_bytes(self.key_two),
+            self.one.to_bytes(),
+            optional_key_bytes(&self.two)
         ]
         .concat()
-    }
-}
-
-fn modifier_key_to_bytes(key: Option<ModifierKey>) -> [u8; 2] {
-    match key {
-        Some(modifier) => (modifier as u16).to_le_bytes(),
-        None => [0u8; 2],
-    }
-}
-
-fn key_to_bytes(key: Option<Key>) -> [u8; 2] {
-    match key {
-        Some(key) => (key as u16).to_le_bytes(),
-        None => [0u8; 2],
     }
 }
 
