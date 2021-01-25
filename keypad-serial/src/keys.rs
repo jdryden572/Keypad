@@ -1,15 +1,12 @@
 use std::fmt::{Display, Formatter};
 
 use enum_primitive::*;
+use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug)]
+#[derive(Deserialize, Serialize, Clone, Debug, Eq, PartialEq)]
 pub struct KeyCombo {
     pub one: KeyPress,
     pub two: Option<KeyPress>,
-    // pub modifier_one: Option<ModifierKey>,
-    // pub modifier_two: Option<ModifierKey>,
-    // pub key_one: Option<Key>,
-    // pub key_two: Option<Key>,
 }
 
 impl Display for KeyCombo {
@@ -22,7 +19,16 @@ impl Display for KeyCombo {
     }
 }
 
-#[derive(Clone, Debug)]
+impl Default for KeyCombo {
+    fn default() -> Self {
+        Self {
+            one: KeyPress::key(Key::A),
+            two: None,
+        }
+    }
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug, Eq, PartialEq)]
 pub struct KeyPress {
     pub ctrl: bool,
     pub alt: bool,
@@ -143,25 +149,6 @@ pub enum ModifierKey {
 }
 }
 
-impl Display for ModifierKey {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}",
-            match self {
-                ModifierKey::LeftCtrl => "Left Ctrl",
-                ModifierKey::LeftShift => "Left Shift",
-                ModifierKey::LeftAlt => "Left Alt",
-                ModifierKey::LeftGui => "Left Windows",
-                ModifierKey::RightCtrl => "Right Ctrl",
-                ModifierKey::RightShift => "Right Shift",
-                ModifierKey::RightAlt => "Right Alt",
-                ModifierKey::RightGui => "Right Windows",
-            }
-        )
-    }
-}
-
 impl ModifierKey {
     pub const ALL: [ModifierKey; 8] = [
         ModifierKey::LeftCtrl,
@@ -176,7 +163,7 @@ impl ModifierKey {
 }
 
 enum_from_primitive! {
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+#[derive(Deserialize, Serialize, Debug, Clone, Copy, Eq, PartialEq)]
 pub enum Key {
     A = 4 | 0xF000,
     B = 5 | 0xF000,

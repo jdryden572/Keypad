@@ -1,0 +1,3 @@
+[workspace]
+members = ["keypad-serial", "keypad-tray"]
+default-members = ["keypad-tray"]
